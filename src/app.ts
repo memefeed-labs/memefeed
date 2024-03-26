@@ -134,7 +134,7 @@ app.delete("/v1/meme/like", memeController.unlikeMeme, errHandler);
  * Body:
  *  - roomId: ID of the room
  *  - userAddress: Address of the user
- *  - password: Password for private rooms
+ *  - password: Password for public rooms
  * 
  * Returns:
  *  An object containing the user metadata: { user: UserRoom }
