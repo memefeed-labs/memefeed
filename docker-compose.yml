@@ -1,0 +1,38 @@
+version: '3.1'
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:latest # TODO: pin to specific version?
+    restart: always
+    environment:
+      POSTGRES_USER: memefeed
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: memefeed-postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./src/resources/pg-data-models.sql:/docker-entrypoint-initdb.d/dbinit.sql
+    networks:
+      - memefeed-network
+
+  memefeed:
+    container_name: memefeed
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    environment:
+      NODE_ENV: development
+      PORT: 3100
+    ports:
+      - "3100:3100"
+
+networks:
+  memefeed-network:
+    driver: bridge
+
+volumes:
+  postgres:
