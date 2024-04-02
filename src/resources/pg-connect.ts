@@ -1,6 +1,8 @@
 import { Pool } from 'pg';
 import { Server } from 'socket.io';
 import logger from '../util/logger';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Singleton
 let singlePool: Pool;
@@ -11,11 +13,11 @@ const init = (io: Server): Pool => {
     }
 
     const pool = new Pool({
-        user: 'memefeed',
-        host: 'localhost',
-        database: 'memefeed-postgres',
-        password: 'mysecretpassword',
-        port: 5432,
+        user: process.env.PGUSER || 'memefeed',
+        host: process.env.PGHOST || 'localhost',
+        database: process.env.PGDATABASE || 'memefeed-postgres',
+        password: process.env.PGPASSWORD || 'mysecretpassword',
+        port: Number(process.env.PGPORT) || 5432,
         idleTimeoutMillis: 30000,
         max: 20
     });
