@@ -151,6 +151,7 @@ app.post("/v1/room/user", roomController.addOrVerifyUserInRoom, errHandler);
  *   description - Description of the room (up to 1024 characters)
  *   type - Type of the room (public or private)
  *   password - password for public rooms
+ *   logoUrl - URL of the room
  * 
  * Returns:
  *   An object containing the created or updated room: { room: Room }

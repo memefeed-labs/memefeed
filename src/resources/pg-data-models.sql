@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS rooms (
   description VARCHAR(1024) NOT NULL,
   type VARCHAR(255) NOT NULL, -- public or private
   password VARCHAR(255), -- only for public rooms
+  logo_url VARCHAR(1024) UNIQUE NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

@@ -1,7 +1,5 @@
 # Memefeed
 
-1. Configure S3 permissions
-
 ## Docker Commands Reference
 
 ```bash

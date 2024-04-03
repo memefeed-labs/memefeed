@@ -15,6 +15,7 @@ const createOrUpdateRoomSchema = joi.object().keys({
     description: joi.string().max(1024).required(),
     type: joi.string().valid('public', 'private').required(),
     password: joi.string().allow(null),
+    logoUrl: joi.string().uri().required(),
 });
 
 const getAddUserToRoomSchema = joi.object().keys({
@@ -35,7 +36,7 @@ const helpers = {
 // Weak security assumptions for simplicity. Rooms needs more thought - could have member roles, etc.
 export const createOrUpdateRoom = async (req: Request, res: Response, next: NextFunction) => {
     logger.debug(`createOrUpdateRoom: ${JSON.stringify(req.body)}`);
-    const { creatorAddress, name, description, type, password } = req.body;
+    const { creatorAddress, name, description, type, password, logoUrl } = req.body;
     const { error } = createOrUpdateRoomSchema.validate(req.body);
     if (error) {
         logger.error(`createOrUpdateRoom body validation error: ${error}`);
@@ -50,7 +51,7 @@ export const createOrUpdateRoom = async (req: Request, res: Response, next: Next
     }
 
     try {
-        const room: Room = await memePg.createOrUpdateRoom(creatorAddress, name, description, type, password);
+        const room: Room = await memePg.createOrUpdateRoom(creatorAddress, name, description, type, password, logoUrl);
         const sanatizedRoom = helpers.sanatizeRoomObject(room);
         logger.debug(`createOrUpdateRoom: ${JSON.stringify(sanatizedRoom)}`);
         return res.status(200).send({ room: sanatizedRoom });

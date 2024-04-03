@@ -90,21 +90,22 @@ const createOrUpdateRoom = async (
     name: string, 
     description: string,
     type: string,
-    password: string
+    password: string,
+    logoUrl: string
 ): Promise<Room> => {
     if (type !== 'public') {
         throw new Error('resources/createOrUpdateRoom: Invalid room type. Only public rooms are allowed at this time.');
     }
 
     const query = `
-        INSERT INTO rooms (creator_address, name, description, type, password)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO rooms (creator_address, name, description, type, password, logo_url)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (name)
-        DO UPDATE SET creator_address = $1, description = $3, password = $5
+        DO UPDATE SET creator_address = $1, description = $3, password = $5, logo_url = $6
         RETURNING *
     `;
 
-    const result = await pool.query(query, [creatorAddress, name, description, type, password]);
+    const result = await pool.query(query, [creatorAddress, name, description, type, password, logoUrl]);
     logger.debug(`resources/createOrUpdateRoom: 
         ${result.rows.length > 0 ? 'Room updated' : 'Room created'} - ${JSON.stringify(result.rows)}`);
     return result.rows[0];
