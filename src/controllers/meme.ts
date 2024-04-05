@@ -12,6 +12,7 @@ import * as memePg from "../resources/memes-pg";
 import * as memeS3 from "../resources/memes-s3";
 import identifyImage from "../util/images";
 import { isValidAddress } from "../util/web3";
+import { convertObjectKeysToCamelCase } from "../util/convertToCamelCase";
 
 // Request schemas
 const uploadMemeSchema = joi.object().keys({
@@ -41,7 +42,11 @@ const likeMemeSchema = joi.object().keys({
 });
 
 // Upload meme
-export const uploadMeme = async (req: Request, res: Response, next: NextFunction) => {
+export const uploadMeme = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
     logger.debug(`uploadMeme: ${JSON.stringify(req.body)}`);
     const { uploaderAddress, roomId } = req.body;
     const { error } = uploadMemeSchema.validate(req.body);
@@ -57,7 +62,9 @@ export const uploadMeme = async (req: Request, res: Response, next: NextFunction
 
     // validate image size is less than 10 MB (client side validation for aspect ratio)
     if (req.file.size > 10 * 1024 * 1024) {
-        logger.error(`uploadMeme: image size is greater than 10 MB: ${req.file.size}`);
+        logger.error(
+            `uploadMeme: image size is greater than 10 MB: ${req.file.size}`
+        );
         return res.status(400).send("image size is greater than 10 MB");
     }
 
@@ -67,13 +74,18 @@ export const uploadMeme = async (req: Request, res: Response, next: NextFunction
     const memeImage = req.file.buffer;
     const memeImageType = identifyImage(memeImage);
     if (!memeImageType) {
-        logger.error(`uploadMeme: image type not supported. only jpeg, png, and gif are supported`);
+        logger.error(
+            `uploadMeme: image type not supported. only jpeg, png, and gif are supported`
+        );
         return res.status(400).send("image type is not supported");
     }
 
     // verify uploader is in room
     try {
-        const userRoom: UserRoom = await memePg.getUserInRoom(roomId, uploaderAddress);
+        const userRoom: UserRoom = await memePg.getUserInRoom(
+            roomId,
+            uploaderAddress
+        );
         if (!userRoom) {
             logger.error(`uploadMeme: uploader not in room`);
             return res.status(400).send("uploader is not in room");
@@ -99,9 +111,13 @@ export const uploadMeme = async (req: Request, res: Response, next: NextFunction
 
     // save meme to database
     try {
-        const meme: Meme = await memePg.createMeme(uploaderAddress, roomId, imageUrl);
+        const meme: Meme = await memePg.createMeme(
+            uploaderAddress,
+            roomId,
+            imageUrl
+        );
         logger.debug(`uploadMeme: ${JSON.stringify(meme)}`);
-        return res.status(200).send({ meme });
+        return res.status(200).send(convertObjectKeysToCamelCase({ meme }));
     } catch (error) {
         logger.error(`uploadMeme: error saving meme to database: ${error}`);
         next(error);
@@ -109,7 +125,11 @@ export const uploadMeme = async (req: Request, res: Response, next: NextFunction
 };
 
 // Get memes by address
-export const getMemes = async (req: Request, res: Response, next: NextFunction) => {
+export const getMemes = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
     logger.debug(`getMemes: ${JSON.stringify(req.query)}`);
     const { error } = getMemesSchema.validate(req.query);
     if (error) {
@@ -121,14 +141,18 @@ export const getMemes = async (req: Request, res: Response, next: NextFunction) 
         const creatorAddress: string = req.query.creatorAddress as string;
         const memes: Meme[] = await memePg.getMemes(creatorAddress);
         logger.debug(`getMemes: ${JSON.stringify(memes)}`);
-        return res.status(200).send({ memes });
+        return res.status(200).send(convertObjectKeysToCamelCase({ memes }));
     } catch (error) {
         next(error);
     }
 };
 
 // Get top memes within a time period
-export const getPopularMemes = async (req: Request, res: Response, next: NextFunction) => {
+export const getPopularMemes = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
     logger.debug(`getPopularMemes: ${JSON.stringify(req.query)}`);
     const { startDate, endDate, roomId, limit } = req.query;
     const { error } = getPopularMemesSchema.validate(req.query);
@@ -138,16 +162,25 @@ export const getPopularMemes = async (req: Request, res: Response, next: NextFun
     }
 
     try {
-        const memes: Meme[] = await memePg.getPopularMemes(String(startDate), String(endDate), Number(roomId), Number(limit));
+        const memes: Meme[] = await memePg.getPopularMemes(
+            String(startDate),
+            String(endDate),
+            Number(roomId),
+            Number(limit)
+        );
         logger.debug(`getPopularMemes: ${JSON.stringify(memes)}`);
-        return res.status(200).send({ popular_memes: memes });
+        return res.status(200).send(convertObjectKeysToCamelCase({ popularMemes: memes }));
     } catch (error) {
         next(error);
     }
 };
 
 // Get recent memes in a room
-export const getRecentMemes = async (req: Request, res: Response, next: NextFunction) => {
+export const getRecentMemes = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
     logger.debug(`getRecentMemes: ${JSON.stringify(req.query)}`);
     const { roomId, limit } = req.query;
     const { error } = getRecentMemesSchema.validate(req.query);
@@ -157,16 +190,23 @@ export const getRecentMemes = async (req: Request, res: Response, next: NextFunc
     }
 
     try {
-        const memes: Meme[] = await memePg.getRecentMemes(Number(roomId), Number(limit));
+        const memes: Meme[] = await memePg.getRecentMemes(
+            Number(roomId),
+            Number(limit)
+        );
         logger.debug(`getRecentMemes: ${JSON.stringify(memes)}`);
-        return res.status(200).send({ memes, pollDelayMs: 5000 });
+        return res.status(200).send(convertObjectKeysToCamelCase({ memes, pollDelayMs: 5000 }));
     } catch (error) {
         next(error);
     }
 };
 
 // User likes a meme
-export const likeMeme = async (req: Request, res: Response, next: NextFunction) => {
+export const likeMeme = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
     logger.debug(`likeMeme: ${JSON.stringify(req.body)}`);
     const { memeId, likerAddress } = req.body;
     const { error } = likeMemeSchema.validate(req.body);
@@ -179,14 +219,18 @@ export const likeMeme = async (req: Request, res: Response, next: NextFunction) 
         // Add like to meme
         const like: Like = await memePg.likeMeme(memeId, likerAddress);
         logger.debug(`likeMeme: ${JSON.stringify(like)}`);
-        return res.status(200).send({ like });
+        return res.status(200).send(convertObjectKeysToCamelCase({ like }));
     } catch (error) {
         next(error);
     }
 };
 
 // User unlikes a meme
-export const unlikeMeme = async (req: Request, res: Response, next: NextFunction) => {
+export const unlikeMeme = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
     logger.debug(`unlikeMeme: ${JSON.stringify(req.body)}`);
     const { memeId, likerAddress } = req.body;
     const { error } = likeMemeSchema.validate(req.body);
@@ -207,4 +251,4 @@ export const unlikeMeme = async (req: Request, res: Response, next: NextFunction
 export const init = async (io: Server) => {
     logger.info("Initializing meme controller");
     await memePg.init(io);
-}
+};

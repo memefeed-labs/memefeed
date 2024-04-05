@@ -24,7 +24,7 @@ const server = app.listen(app.get('port'), () => {
 const io: Server = new Server(server);
 io.on('connection', (socket) => {
   console.log('Client connected');
-  
+
   socket.on('disconnect', () => {
     console.log('Client disconnected');
   });

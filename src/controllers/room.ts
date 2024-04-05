@@ -8,6 +8,7 @@ import Room from "../models/Room";
 import UserRoom from "../models/UserRoom";
 import * as memePg from "../resources/memes-pg";
 import { isValidAddress } from "../util/web3";
+import { convertObjectKeysToCamelCase } from "../util/convertToCamelCase";
 
 const createOrUpdateRoomSchema = joi.object().keys({
     creatorAddress: joi.string().custom(isValidAddress).required(),
@@ -54,7 +55,7 @@ export const createOrUpdateRoom = async (req: Request, res: Response, next: Next
         const room: Room = await memePg.createOrUpdateRoom(creatorAddress, name, description, type, password, logoUrl);
         const sanatizedRoom = helpers.sanatizeRoomObject(room);
         logger.debug(`createOrUpdateRoom: ${JSON.stringify(sanatizedRoom)}`);
-        return res.status(200).send({ room: sanatizedRoom });
+        return res.status(200).send(convertObjectKeysToCamelCase({ room: sanatizedRoom }));
     } catch (error) {
         next(error);
     }
@@ -88,7 +89,7 @@ export const addOrVerifyUserInRoom = async (req: Request, res: Response, next: N
         // Add user to room or update last visited to current time
         const user: UserRoom = await memePg.addOrVisitUserInRoom(roomId, userAddress);
         logger.debug(`addOrVerifyUserInRoom: ${JSON.stringify(user)}`);
-        return res.status(200).send({ user });
+        return res.status(200).send(convertObjectKeysToCamelCase({ user }));
     } catch (error) {
         next(error);
     }

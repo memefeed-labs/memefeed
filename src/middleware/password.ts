@@ -15,7 +15,7 @@ const hashPasswordMiddleware = async (req: express.Request, res: express.Respons
     if (error) {
       return res.status(400).send(error.message);
     }
-    
+
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     req.body.password = hashedPassword;
     next();
