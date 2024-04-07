@@ -43,6 +43,8 @@ services:
       - '3100:3100'
     networks:
       - memefeed-network
+    volumes:
+      - ~/.aws:/root/.aws
 
 networks:
   memefeed-network:

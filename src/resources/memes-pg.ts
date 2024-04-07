@@ -34,7 +34,7 @@ const getPopularMemes = async (startDate: string, endDate: string, roomId: numbe
     const query = `
         SELECT * FROM memes
         WHERE updated_at > $1 AND updated_at < $2 AND room_id = $3
-        ORDER BY likes_count DESC LIMIT $4
+        ORDER BY likes_count, created_at DESC LIMIT $4
     `;
 
     const result = await pool.query(query, [startDate, endDate, String(roomId), String(limit)]);
