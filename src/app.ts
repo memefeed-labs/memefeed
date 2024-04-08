@@ -86,7 +86,7 @@ app.get("/v1/memes", memeController.getMemes, errHandler);
  *   roomId - ID of the room
  *
  * Returns:
- *   An array of memes: [{ Meme }]
+ *   An array of memes: { popularMemes: Meme[] }
  *   Note: All fields are camel case
  */
 app.get("/v1/memes/popular", memeController.getPopularMemes, errHandler);
@@ -101,7 +101,7 @@ app.get("/v1/memes/popular", memeController.getPopularMemes, errHandler);
  *  limit - Number of memes to return (default: 100)
  *
  * Returns:
- *  An array of memes with pollDelayMs (in ms since clocks vary): { memes: Meme[], pollDelayMs: number }
+ *  An array of memes with pollDelayMs (in ms since clocks vary): { recentMemes: Meme[], pollDelayMs: number }
  *  Note: All fields are camel case
  */
 app.get("/v1/memes/recent", memeController.getRecentMemes, errHandler);

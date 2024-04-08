@@ -21,13 +21,18 @@ const server = app.listen(app.get('port'), () => {
 /**
  * Inject the websocket
  */
-const io: Server = new Server(server);
+const io: Server = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000"
+  }
+});
+
 io.on('connection', (socket) => {
-  console.log('Client connected');
+  console.log('Client connected with client id: ', socket.id);
 
   socket.on('disconnect', () => {
-    console.log('Client disconnected');
-  });
+    console.log('Client disconnected with client id: ', socket.id);
+  },);
 });
 
 import * as memeController from "./controllers/meme";

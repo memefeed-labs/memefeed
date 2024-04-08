@@ -195,7 +195,7 @@ export const getRecentMemes = async (
             Number(limit)
         );
         logger.debug(`getRecentMemes: ${JSON.stringify(memes)}`);
-        return res.status(200).send(convertObjectKeysToCamelCase({ memes, pollDelayMs: 5000 }));
+        return res.status(200).send(convertObjectKeysToCamelCase({ recentMemes: memes, pollDelayMs: 5000 }));
     } catch (error) {
         next(error);
     }
