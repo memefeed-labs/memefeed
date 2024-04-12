@@ -2,8 +2,8 @@
 // For simplicity, user is not a separate entity in the database.
 export default interface UserRoom {
     id: number;
-    created_at: string;
-    last_visit: string;
+    createdAt: string;
+    lastVisit: string;
     address: string;
-    room_id: number;
+    roomId: number;
 };

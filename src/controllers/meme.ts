@@ -29,11 +29,13 @@ const getPopularMemesSchema = joi.object().keys({
     endDate: joi.date().iso().required(),
     limit: joi.number().integer().min(1).max(200).required(),
     roomId: joi.number().integer().required(),
+    userAddress: joi.string().custom(isValidAddress).required(),
 });
 
 const getRecentMemesSchema = joi.object().keys({
     roomId: joi.number().integer().required(),
     limit: joi.number().integer().min(1).max(200).required(),
+    userAddress: joi.string().custom(isValidAddress).required(),
 });
 
 const likeMemeSchema = joi.object().keys({
@@ -41,12 +43,16 @@ const likeMemeSchema = joi.object().keys({
     likerAddress: joi.string().custom(isValidAddress).required(),
 });
 
+const addLikersToMemes = async (memes: Meme[]) => {
+    return await Promise.all(memes.map(async (meme: Meme) => {
+        const likes: Like[] = await memePg.getMemeLikes(meme.id);
+        const likers: string[] = likes.map((like: Like) => like.likerAddress);
+        return { ...meme, likers };
+    }));
+};
+
 // Upload meme
-export const uploadMeme = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
+export const uploadMeme = async (req: Request, res: Response, next: NextFunction) => {
     logger.debug(`uploadMeme: ${JSON.stringify(req.body)}`);
     const { uploaderAddress, roomId } = req.body;
     const { error } = uploadMemeSchema.validate(req.body);
@@ -80,19 +86,16 @@ export const uploadMeme = async (
         return res.status(400).send("image type is not supported");
     }
 
-    // verify uploader is in room
+    // verify user is in room
     try {
-        const userRoom: UserRoom = await memePg.getUserInRoom(
-            roomId,
-            uploaderAddress
-        );
+        const userRoom: UserRoom = await memePg.getUserInRoom(roomId, uploaderAddress);
+
         if (!userRoom) {
-            logger.error(`uploadMeme: uploader not in room`);
-            return res.status(400).send("uploader is not in room");
+            logger.error(`uploadMeme: user not in room`);
+            return res.status(401).send("user is not in room");
         }
     } catch (error) {
-        logger.error(`uploadMeme: error verifying uploader in room: ${error}`);
-        return next(error);
+        next(error);
     }
 
     // generate a unique image id
@@ -111,13 +114,9 @@ export const uploadMeme = async (
 
     // save meme to database
     try {
-        const meme: Meme = await memePg.createMeme(
-            uploaderAddress,
-            roomId,
-            imageUrl
-        );
+        const meme: Meme = await memePg.createMeme(uploaderAddress, roomId, imageUrl);
         logger.debug(`uploadMeme: ${JSON.stringify(meme)}`);
-        return res.status(200).send(convertObjectKeysToCamelCase({ meme }));
+        return res.status(200).send({ meme });
     } catch (error) {
         logger.error(`uploadMeme: error saving meme to database: ${error}`);
         next(error);
@@ -125,11 +124,7 @@ export const uploadMeme = async (
 };
 
 // Get memes by address
-export const getMemes = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
+export const getMemes = async (req: Request, res: Response, next: NextFunction) => {
     logger.debug(`getMemes: ${JSON.stringify(req.query)}`);
     const { error } = getMemesSchema.validate(req.query);
     if (error) {
@@ -141,24 +136,33 @@ export const getMemes = async (
         const creatorAddress: string = req.query.creatorAddress as string;
         const memes: Meme[] = await memePg.getMemes(creatorAddress);
         logger.debug(`getMemes: ${JSON.stringify(memes)}`);
-        return res.status(200).send(convertObjectKeysToCamelCase({ memes }));
+        const memesWithLikers = await addLikersToMemes(memes);
+        return res.status(200).send({ memes: memesWithLikers });
     } catch (error) {
         next(error);
     }
 };
 
 // Get top memes within a time period
-export const getPopularMemes = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
+export const getPopularMemes = async (req: Request, res: Response, next: NextFunction) => {
     logger.debug(`getPopularMemes: ${JSON.stringify(req.query)}`);
-    const { startDate, endDate, roomId, limit } = req.query;
+    const { startDate, endDate, roomId, limit, userAddress } = req.query;
     const { error } = getPopularMemesSchema.validate(req.query);
     if (error) {
         logger.error(`getPopularMemes query params validation error: ${error}`);
         return res.status(400).send(error.message);
+    }
+
+    // verify user is in room
+    try {
+        const userRoom: UserRoom = await memePg.getUserInRoom(Number(roomId), String(userAddress));
+
+        if (!userRoom) {
+            logger.error(`getPopularMemes: user not in room`);
+            return res.status(401).send("user is not in room");
+        }
+    } catch (error) {
+        next(error);
     }
 
     try {
@@ -169,50 +173,70 @@ export const getPopularMemes = async (
             Number(limit)
         );
         logger.debug(`getPopularMemes: ${JSON.stringify(memes)}`);
-        return res.status(200).send(convertObjectKeysToCamelCase({ popularMemes: memes }));
+        const memesWithLikers = await addLikersToMemes(memes);
+        return res.status(200).send({ popularMemes: memesWithLikers });
     } catch (error) {
         next(error);
     }
 };
 
 // Get recent memes in a room
-export const getRecentMemes = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
+export const getRecentMemes = async (req: Request, res: Response, next: NextFunction) => {
     logger.debug(`getRecentMemes: ${JSON.stringify(req.query)}`);
-    const { roomId, limit } = req.query;
+    const { roomId, limit, userAddress } = req.query;
     const { error } = getRecentMemesSchema.validate(req.query);
     if (error) {
         logger.error(`getRecentMemes query params validation error: ${error}`);
         return res.status(400).send(error.message);
     }
 
+    // verify user is in room
     try {
-        const memes: Meme[] = await memePg.getRecentMemes(
-            Number(roomId),
-            Number(limit)
-        );
+        const userRoom: UserRoom = await memePg.getUserInRoom(Number(roomId), String(userAddress));
+
+        if (!userRoom) {
+            logger.error(`getRecentMemes: user not in room`);
+            return res.status(401).send("user is not in room");
+        }
+    } catch (error) {
+        next(error);
+    }
+
+    try {
+        const memes: Meme[] = await memePg.getRecentMemes(Number(roomId), Number(limit));
         logger.debug(`getRecentMemes: ${JSON.stringify(memes)}`);
-        return res.status(200).send(convertObjectKeysToCamelCase({ recentMemes: memes, pollDelayMs: 5000 }));
+        const memesWithLikers = await addLikersToMemes(memes);
+        return res.status(200).send({ recentMemes: memesWithLikers, pollDelayMs: 5000 });
     } catch (error) {
         next(error);
     }
 };
 
 // User likes a meme
-export const likeMeme = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
+export const likeMeme = async (req: Request, res: Response, next: NextFunction) => {
     logger.debug(`likeMeme: ${JSON.stringify(req.body)}`);
     const { memeId, likerAddress } = req.body;
     const { error } = likeMemeSchema.validate(req.body);
     if (error) {
         logger.error(`likeMeme body validation error: ${error}`);
         return res.status(400).send(error.message);
+    }
+
+    // verify meme exists and user is in room
+    try {
+        const meme: Meme = await memePg.getSingleMeme(memeId);
+        if (!meme) {
+            logger.error(`likeMeme: meme not found`);
+            return res.status(400).send("meme not found");
+        }
+
+        const userRoom: UserRoom = await memePg.getUserInRoom(meme.roomId, String(likerAddress));
+        if (!userRoom) {
+            logger.error(`likeMeme: user not in room`);
+            return res.status(401).send("user is not in room");
+        }
+    } catch (error) {
+        next(error);
     }
 
     try {
@@ -226,17 +250,30 @@ export const likeMeme = async (
 };
 
 // User unlikes a meme
-export const unlikeMeme = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
+export const unlikeMeme = async (req: Request, res: Response, next: NextFunction) => {
     logger.debug(`unlikeMeme: ${JSON.stringify(req.body)}`);
     const { memeId, likerAddress } = req.body;
     const { error } = likeMemeSchema.validate(req.body);
     if (error) {
         logger.error(`unlikeMeme body validation error: ${error}`);
         return res.status(400).send(error.message);
+    }
+
+    // verify user is in room only
+    try {
+        const meme: Meme = await memePg.getSingleMeme(memeId);
+        if (!meme) {
+            // 200 status code to signal that the meme like is removed
+            return res.status(200).send();
+        }
+
+        const userRoom: UserRoom = await memePg.getUserInRoom(meme.roomId, String(likerAddress));
+        if (!userRoom) {
+            logger.error(`unlikeMeme: user not in room`);
+            return res.status(401).send("user is not in room");
+        }
+    } catch (error) {
+        next(error);
     }
 
     try {

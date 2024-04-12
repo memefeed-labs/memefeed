@@ -48,6 +48,8 @@ CREATE INDEX IF NOT EXISTS idx_room_address ON memes (creator_address, room_id);
 
 CREATE INDEX IF NOT EXISTS idx_room_id_rooms ON user_rooms (room_id);
 CREATE INDEX IF NOT EXISTS idx_address_rooms ON user_rooms (address);
+CREATE INDEX IF NOT EXISTS idx_likes_address ON meme_likes (liker_address);
+CREATE INDEX IF NOT EXISTS idx_meme_id_likes ON meme_likes (meme_id);
 
 -- TRIGGERS
 

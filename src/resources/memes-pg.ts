@@ -7,6 +7,7 @@ import Meme from "../models/Meme";
 import Like from "../models/Like";
 import Room from "../models/Room";
 import UserRoom from "../models/UserRoom";
+import { convertObjectKeysToCamelCase } from "../util/convertToCamelCase";
 
 let pool: Pool;
 const init = async (io: Server) => {
@@ -18,7 +19,15 @@ const createMeme = async (creatorAddress: string, roomId: number, url: string): 
     const query = 'INSERT INTO memes (creator_address, room_id, url) VALUES ($1, $2, $3) RETURNING *';
     const result = await pool.query(query, [creatorAddress, String(roomId), url]);
     logger.debug(`resources/createMeme: ${JSON.stringify(result.rows)}`);
-    return result.rows[0];
+    return convertObjectKeysToCamelCase(result.rows[0]);
+};
+
+// Get a single meme
+const getSingleMeme = async (memeId: number): Promise<Meme> => {
+    const query = `SELECT * FROM memes WHERE id = ${memeId}`;
+    const result = await pool.query(query);
+    logger.debug(`resources/getMeme: ${JSON.stringify(result.rows)}`);
+    return convertObjectKeysToCamelCase(result.rows[0]);
 };
 
 // Get memes by address
@@ -26,7 +35,7 @@ const getMemes = async (creatorAddress: string): Promise<Meme[]> => {
     const query = `SELECT * FROM memes WHERE creator_address = '${creatorAddress}'`;
     const result = await pool.query(query);
     logger.debug(`resources/getMemes: ${JSON.stringify(result.rows)}`);
-    return result.rows;
+    return convertObjectKeysToCamelCase(result.rows);
 };
 
 // Get popular memes - startDate (inclusive) and endDate are in ISO format
@@ -39,7 +48,7 @@ const getPopularMemes = async (startDate: string, endDate: string, roomId: numbe
 
     const result = await pool.query(query, [startDate, endDate, String(roomId), String(limit)]);
     logger.debug(`resources/getPopularMemes: ${JSON.stringify(result.rows)}`);
-    return result.rows;
+    return convertObjectKeysToCamelCase(result.rows);
 };
 
 // Get recent memes in a room
@@ -47,8 +56,16 @@ const getRecentMemes = async (roomId: number, limit: number): Promise<Meme[]> =>
     const query = `SELECT * FROM memes WHERE room_id = ${roomId} ORDER BY created_at DESC LIMIT ${limit}`;
     const result = await pool.query(query);
     logger.debug(`resources/getRecentMemes: ${JSON.stringify(result.rows)}`);
-    return result.rows;
+    return convertObjectKeysToCamelCase(result.rows);
 }
+
+// Get meme likes
+const getMemeLikes = async (memeId: number): Promise<Like[]> => {
+    const query = `SELECT * FROM meme_likes WHERE meme_id = ${memeId}`;
+    const result = await pool.query(query);
+    logger.debug(`resources/getMemeLikes: ${JSON.stringify(result.rows)}`);
+    return convertObjectKeysToCamelCase(result.rows);
+};
 
 // Add a like to meme
 const likeMeme = async (memeId: number, likerAddress: string): Promise<Like> => {
@@ -60,7 +77,7 @@ const likeMeme = async (memeId: number, likerAddress: string): Promise<Like> => 
 
     const result = await pool.query(query, [String(memeId), likerAddress]);
     logger.debug(`resources/likeMeme: ${JSON.stringify(result.rows)}`);
-    return result.rows[0];
+    return convertObjectKeysToCamelCase(result.rows[0]);
 };
 
 // Unlike a meme
@@ -81,7 +98,7 @@ const addOrVisitUserInRoom = async (roomId: number, userAddress: string): Promis
     
     const result = await pool.query(query, [String(roomId), userAddress]);
     logger.debug(`resources/addOrVisitUserInRoom: ${JSON.stringify(result.rows)}`);
-    return result.rows[0];
+    return convertObjectKeysToCamelCase(result.rows[0]);
 };
 
 // Create or update a room
@@ -108,7 +125,7 @@ const createOrUpdateRoom = async (
     const result = await pool.query(query, [creatorAddress, name, description, type, password, logoUrl]);
     logger.debug(`resources/createOrUpdateRoom: 
         ${result.rows.length > 0 ? 'Room updated' : 'Room created'} - ${JSON.stringify(result.rows)}`);
-    return result.rows[0];
+    return convertObjectKeysToCamelCase(result.rows[0]);
 };
 
 // Get a single user in a room
@@ -116,7 +133,7 @@ const getUserInRoom = async (roomId: number, userAddress: string): Promise<UserR
     const query = `SELECT * FROM user_rooms WHERE room_id = ${roomId} AND address = '${userAddress}'`;
     const result = await pool.query(query);
     logger.debug(`resources/getUserInRoom: ${JSON.stringify(result.rows)}`);
-    return result.rows[0];
+    return convertObjectKeysToCamelCase(result.rows[0]);
 };
 
 // Get a room by ID
@@ -124,7 +141,7 @@ const getRoomById = async (roomId: number): Promise<Room> => {
     const query = `SELECT * FROM rooms WHERE id = ${roomId}`;
     const result = await pool.query(query);
     logger.debug(`resources/getRoomById: ${JSON.stringify(result.rows)}`);
-    return result.rows[0];
+    return convertObjectKeysToCamelCase(result.rows[0]);
 };
 
 export {
@@ -132,9 +149,11 @@ export {
 
     // MEMES
     createMeme,
+    getSingleMeme,
     getMemes,
     getPopularMemes,
     getRecentMemes,
+    getMemeLikes,
     likeMeme,
     unlikeMeme,
 

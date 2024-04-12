@@ -84,6 +84,7 @@ app.get("/v1/memes", memeController.getMemes, errHandler);
  *   startDate - Start date of the time period in ISO 8601 format (e.g., "2022-01-30T02:37:48.762Z")
  *   endDate - End date of the time period in ISO 8601 format (e.g., "2022-03-14T12:00:00.000Z")
  *   roomId - ID of the room
+ *   userAddress - Web3 address of the requesting user // TODO: move to header
  *
  * Returns:
  *   An array of memes: { popularMemes: Meme[] }
@@ -99,6 +100,7 @@ app.get("/v1/memes/popular", memeController.getPopularMemes, errHandler);
  * Query Parameters:
  *  roomId - ID of the room
  *  limit - Number of memes to return (default: 100)
+ *  userAddress - Web3 address of the requesting user // TODO: move to header
  *
  * Returns:
  *  An array of memes with pollDelayMs (in ms since clocks vary): { recentMemes: Meme[], pollDelayMs: number }
@@ -113,7 +115,6 @@ app.get("/v1/memes/recent", memeController.getRecentMemes, errHandler);
  * Body:
  *   - memeId: ID of the meme to like
  *   - likerAddress: Web3 address of the liker
- *   TODO: verify likerAddress is in the room of the meme
  *
  * Returns:
  *  An object containing the Like: { like: Like }
@@ -128,7 +129,6 @@ app.put("/v1/meme/like", memeController.likeMeme, errHandler);
  * Body:
  *   - memeId: ID of the meme to like
  *   - likerAddress: Web3 address of the liker
- *   TODO: verify likerAddress is in the room of the meme
  *
  * Returns: 200 OK
  */
