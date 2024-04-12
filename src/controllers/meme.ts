@@ -44,12 +44,17 @@ const likeMemeSchema = joi.object().keys({
 });
 
 const addLikersToMemes = async (memes: Meme[]) => {
-    return await Promise.all(memes.map(async (meme: Meme) => {
+    const likersPromises = memes.map(async (meme: Meme) => {
         const likes: Like[] = await memePg.getMemeLikes(meme.id);
         const likers: string[] = likes.map((like: Like) => like.likerAddress);
         return { ...meme, likers };
-    }));
+    });
+
+    // maintains order of memes
+    const memesWithLikers = await Promise.all(likersPromises);
+    return memesWithLikers;
 };
+
 
 // Upload meme
 export const uploadMeme = async (req: Request, res: Response, next: NextFunction) => {
