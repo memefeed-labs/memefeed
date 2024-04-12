@@ -42,7 +42,7 @@ const getMemes = async (creatorAddress: string): Promise<Meme[]> => {
 const getPopularMemes = async (startDate: string, endDate: string, roomId: number, limit: number): Promise<Meme[]> => {
     const query = `
         SELECT * FROM memes
-        WHERE updated_at > $1 AND updated_at < $2 AND room_id = $3
+        WHERE created_at > $1 AND created_at < $2 AND room_id = $3
         ORDER BY likes_count DESC, created_at DESC LIMIT $4
     `;
 
