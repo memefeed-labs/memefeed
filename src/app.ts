@@ -53,7 +53,7 @@ const errHandler = (err: Error, req: express.Request, res: express.Response, nex
  * Form Data (Body):
  *   - meme: Meme image (gets converted to field buffer)
  *   - body:
- *       - uploaderAddress: Web3 address of the submitter
+ *       - creatorAddress: Web3 address of the submitter
  *       - roomId: ID of the room
  *
  * Returns:

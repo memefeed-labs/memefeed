@@ -9,3 +9,4 @@
 
 1. Convert to more RESTful routes / grpc
 2. Response validation
+3. Scrape tenor.com for meme templates

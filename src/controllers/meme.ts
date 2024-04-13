@@ -16,7 +16,7 @@ import { convertObjectKeysToCamelCase } from "../util/convertToCamelCase";
 
 // Request schemas
 const uploadMemeSchema = joi.object().keys({
-    uploaderAddress: joi.string().custom(isValidAddress).required(),
+    creatorAddress: joi.string().custom(isValidAddress).required(),
     roomId: joi.number().integer().required(),
 });
 
@@ -59,7 +59,7 @@ const addLikersToMemes = async (memes: Meme[]) => {
 // Upload meme
 export const uploadMeme = async (req: Request, res: Response, next: NextFunction) => {
     logger.debug(`uploadMeme: ${JSON.stringify(req.body)}`);
-    const { uploaderAddress, roomId } = req.body;
+    const { creatorAddress, roomId } = req.body;
     const { error } = uploadMemeSchema.validate(req.body);
     if (error) {
         logger.error(`uploadMeme body validation error: ${error}`);
@@ -93,7 +93,7 @@ export const uploadMeme = async (req: Request, res: Response, next: NextFunction
 
     // verify user is in room
     try {
-        const userRoom: UserRoom = await memePg.getUserInRoom(roomId, uploaderAddress);
+        const userRoom: UserRoom = await memePg.getUserInRoom(roomId, creatorAddress);
 
         if (!userRoom) {
             logger.error(`uploadMeme: user not in room`);
@@ -119,7 +119,7 @@ export const uploadMeme = async (req: Request, res: Response, next: NextFunction
 
     // save meme to database
     try {
-        const meme: Meme = await memePg.createMeme(uploaderAddress, roomId, imageUrl);
+        const meme: Meme = await memePg.createMeme(creatorAddress, roomId, imageUrl);
         logger.debug(`uploadMeme: ${JSON.stringify(meme)}`);
         return res.status(200).send({ meme });
     } catch (error) {
