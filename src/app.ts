@@ -51,16 +51,15 @@ const errHandler = (err: Error, req: express.Request, res: express.Response, nex
  * POST /v1/meme
  *
  * Form Data (Body):
- *   - meme: Meme image (gets converted to field buffer)
- *   - body:
- *       - creatorAddress: Web3 address of the submitter
- *       - roomId: ID of the room
+ *   - memeImage: Meme image (gets converted to field buffer)
+ *   - creatorAddress: Web3 address of the submitter
+ *   - roomId: ID of the room
  *
  * Returns:
  *   An object containing the meme: { meme: Meme }
  *   Note: All fields are camel case
  */
-app.post("/v1/meme", upload.single("meme"), memeController.uploadMeme, errHandler);
+app.post("/v1/meme", upload.single("memeImage"), memeController.uploadMeme, errHandler);
 
 /**
  * Retrieves memes based on the provided user address.
@@ -151,21 +150,38 @@ app.delete("/v1/meme/like", memeController.unlikeMeme, errHandler);
 app.post("/v1/room/user", roomController.addOrVerifyUserInRoom, errHandler);
 
 /**
- * Creates or updates a room (internal/admin use only)
- * PUT /v1/internal/room
+ * Retrieves a room by ID or name.
+ * GET /v1/room
  *
- * Body:
- *   creatorAddress - Address of the creating user
- *   name - Name of the room (up to 256 characters)
- *   description - Description of the room (up to 1024 characters)
- *   type - Type of the room (public or private)
- *   password - password for public rooms
- *   logoUrl - URL of the room
+ * Query Parameters:
+ *  - roomId: ID of the room
+ *  - name: Name of the room
+ *  NOTE: Either id or name must be provided
+ *  NOTE: if both are provided, id will be used
+ *  NOTE: public room details are publicly available
  *
  * Returns:
- *   An object containing the created or updated room: { room: Room }
+ *  An object containing the room: { room: Room }
+ *  Note: All fields are camel case
+ */
+app.get("/v1/room", roomController.getRoom, errHandler);
+
+/**
+ * Creates a room (internal/admin use only)
+ * PUT /v1/internal/room
+ *
+ * Form Data (Body):
+ *   - roomImage: Room image (gets converted to field buffer)
+ *   - creatorAddress - Address of the creating user
+ *   - name - Name of the room (up to 256 characters)
+ *   - description - Description of the room (up to 1024 characters)
+ *   - type - Type of the room (public or private)
+ *   - password - password for public rooms
+ *
+ * Returns:
+ *   An object containing the created room: { room: Room }
  *   NOTE: All fields are camel case
  */
-app.put("/v1/internal/room", hashPasswordMiddleware, roomController.createOrUpdateRoom, errHandler);
+app.put("/v1/internal/room", upload.single("roomImage"), hashPasswordMiddleware, roomController.createRoom, errHandler);
 
 export default app;

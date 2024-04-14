@@ -14,6 +14,14 @@ const init = async (io: Server) => {
     pool = pgInit(io);
 }
 
+const helpers = {
+    sanatizeRoomObject: (room: Room) => {
+        const sanatizedRoom = { ...room };
+        delete sanatizedRoom.password;
+        return sanatizedRoom;
+    }
+}
+
 // Create a meme
 const createMeme = async (creatorAddress: string, roomId: number, url: string): Promise<Meme> => {
     const query = 'INSERT INTO memes (creator_address, room_id, url) VALUES ($1, $2, $3) RETURNING *';
@@ -101,8 +109,8 @@ const addOrVisitUserInRoom = async (roomId: number, userAddress: string): Promis
     return convertObjectKeysToCamelCase(result.rows[0]);
 };
 
-// Create or update a room
-const createOrUpdateRoom = async (
+// Creates a room
+const createRoom = async (
     creatorAddress: string, 
     name: string, 
     description: string,
@@ -111,21 +119,37 @@ const createOrUpdateRoom = async (
     logoUrl: string
 ): Promise<Room> => {
     if (type !== 'public') {
-        throw new Error('resources/createOrUpdateRoom: Invalid room type. Only public rooms are allowed at this time.');
+        throw new Error('resources/createRoom: Invalid room type. Only public rooms are allowed at this time.');
     }
 
     const query = `
         INSERT INTO rooms (creator_address, name, description, type, password, logo_url)
         VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (name)
-        DO UPDATE SET creator_address = $1, description = $3, password = $5, logo_url = $6
         RETURNING *
     `;
 
     const result = await pool.query(query, [creatorAddress, name, description, type, password, logoUrl]);
-    logger.debug(`resources/createOrUpdateRoom: 
-        ${result.rows.length > 0 ? 'Room updated' : 'Room created'} - ${JSON.stringify(result.rows)}`);
-    return convertObjectKeysToCamelCase(result.rows[0]);
+    const sanatizedRoom = helpers.sanatizeRoomObject(result.rows[0]);
+    logger.debug(`resources/createRoom: ${JSON.stringify(sanatizedRoom)}`);
+    return convertObjectKeysToCamelCase(sanatizedRoom);
+};
+
+// Get a room by ID
+const getRoomById = async (roomId: number, includePassword = false): Promise<Room> => {
+    const query = `SELECT * FROM rooms WHERE id = ${roomId}`;
+    const result = await pool.query(query);
+    const sanatizedRoom = helpers.sanatizeRoomObject(result.rows[0]);
+    logger.debug(`resources/getRoomById: ${JSON.stringify(sanatizedRoom)}`);
+    return convertObjectKeysToCamelCase(includePassword ? result.rows[0] : sanatizedRoom);
+};
+
+// Get a room by name
+const getRoomByName = async (name: string): Promise<Room> => {
+    const query = `SELECT * FROM rooms WHERE name = '${name}'`;
+    const result = await pool.query(query);
+    const sanatizedRoom = helpers.sanatizeRoomObject(result.rows[0]);
+    logger.debug(`resources/getRoomByName: ${JSON.stringify(sanatizedRoom)}`);
+    return convertObjectKeysToCamelCase(sanatizedRoom);
 };
 
 // Get a single user in a room
@@ -133,14 +157,6 @@ const getUserInRoom = async (roomId: number, userAddress: string): Promise<UserR
     const query = `SELECT * FROM user_rooms WHERE room_id = ${roomId} AND address = '${userAddress}'`;
     const result = await pool.query(query);
     logger.debug(`resources/getUserInRoom: ${JSON.stringify(result.rows)}`);
-    return convertObjectKeysToCamelCase(result.rows[0]);
-};
-
-// Get a room by ID
-const getRoomById = async (roomId: number): Promise<Room> => {
-    const query = `SELECT * FROM rooms WHERE id = ${roomId}`;
-    const result = await pool.query(query);
-    logger.debug(`resources/getRoomById: ${JSON.stringify(result.rows)}`);
     return convertObjectKeysToCamelCase(result.rows[0]);
 };
 
@@ -159,7 +175,8 @@ export {
 
     // ROOMS
     addOrVisitUserInRoom,
-    createOrUpdateRoom,
+    createRoom,
+    getRoomById,
+    getRoomByName,
     getUserInRoom,
-    getRoomById
 };

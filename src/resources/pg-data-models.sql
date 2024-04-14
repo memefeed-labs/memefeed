@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS rooms (
   id BIGSERIAL PRIMARY KEY,
-  creator_address VARCHAR(255) UNIQUE NOT NULL,
+  creator_address VARCHAR(255) NOT NULL,
   name VARCHAR(255) UNIQUE NOT NULL,
   description VARCHAR(1024) NOT NULL,
   type VARCHAR(255) NOT NULL, -- public or private
