@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { Server } from 'socket.io';
 import logger from '../util/logger';
+import { convertObjectKeysToCamelCase } from "../util/convertToCamelCase";
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -38,7 +39,8 @@ const init = (io: Server): Pool => {
             logger.debug('Received notification', msg);
             if (msg.channel === 'new_meme') {
                 const payload = JSON.parse(msg.payload as string);
-                io.emit('new_meme', payload); // TODO: could send as new_meme_roomId to optimize client side
+                // TODO: could send as new_meme_roomId to optimize client side
+                io.emit('new_meme', convertObjectKeysToCamelCase(payload));
             }
         });
 
