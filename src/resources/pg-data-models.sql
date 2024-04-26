@@ -1,39 +1,39 @@
 CREATE TABLE IF NOT EXISTS rooms (
-  id BIGSERIAL PRIMARY KEY,
-  creator_address VARCHAR(255) NOT NULL,
-  name VARCHAR(255) UNIQUE NOT NULL,
-  description VARCHAR(1024) NOT NULL,
-  type VARCHAR(255) NOT NULL, -- public or private
-  password VARCHAR(255), -- only for public rooms
-  logo_url VARCHAR(1024) UNIQUE NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  id BIGSERIAL PRIMARY KEY, -- not needed in state
+  creator_address VARCHAR(255) NOT NULL, -- 40-60 bytes (bech32)
+  name VARCHAR(255) UNIQUE NOT NULL, -- 20 bytes
+  description VARCHAR(1024) NOT NULL, -- 255 bytes
+  type VARCHAR(255) NOT NULL, -- public or private -- 4 bytes, could compress to 1 byte
+  password VARCHAR(255), -- only for public rooms -- 32 bytes (sha256)
+  logo_url VARCHAR(1024) UNIQUE NOT NULL, -- 32 bytes (sha256)
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- not needed in state
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW() -- not needed in state
 );
 
 -- many to many relationship between users and rooms
 CREATE TABLE IF NOT EXISTS user_rooms (
-  id BIGSERIAL PRIMARY KEY,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  last_visit TIMESTAMP NOT NULL DEFAULT NOW(),
-  address VARCHAR(255) NOT NULL,
-  room_id BIGINT NOT NULL REFERENCES rooms(id)
+  id BIGSERIAL PRIMARY KEY, -- not needed in state
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- not needed in state
+  last_visit TIMESTAMP NOT NULL DEFAULT NOW(), -- 20 bytes (timestamp)
+  address VARCHAR(255) NOT NULL, -- 40-60 bytes (bech32)
+  room_id BIGINT NOT NULL REFERENCES rooms(id) -- 8 bytes
 );
 
 CREATE TABLE IF NOT EXISTS memes (
-  id BIGSERIAL PRIMARY KEY,
-  creator_address VARCHAR(255) NOT NULL,
-  room_id BIGINT NOT NULL REFERENCES rooms(id),
-  url VARCHAR(1024) UNIQUE NOT NULL,
-  likes_count INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  id BIGSERIAL PRIMARY KEY, -- not needed in state
+  creator_address VARCHAR(255) NOT NULL, -- 40-60 bytes (bech32)
+  room_id BIGINT NOT NULL REFERENCES rooms(id), -- 8 bytes
+  url VARCHAR(1024) UNIQUE NOT NULL, -- 32 bytes (sha256)
+  likes_count INTEGER NOT NULL DEFAULT 0, -- not needed in state, can be derived from likes table
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- not needed in state
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW() -- not needed in state
 );
 
 CREATE TABLE IF NOT EXISTS meme_likes (
-  id BIGSERIAL PRIMARY KEY,
-  liker_address VARCHAR(255) NOT NULL,
-  meme_id BIGINT NOT NULL REFERENCES memes(id),
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  id BIGSERIAL PRIMARY KEY, -- not needed in state
+  liker_address VARCHAR(255) NOT NULL, -- 40-60 bytes (bech32)
+  meme_id BIGINT NOT NULL REFERENCES memes(id), -- 8 bytes
+  created_at TIMESTAMP NOT NULL DEFAULT NOW() -- not needed in state
 );
 
 -- CONSTRAINTS
