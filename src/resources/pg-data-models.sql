@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS user_rooms (
 );
 
 CREATE TABLE IF NOT EXISTS memes (
-  id BIGSERIAL PRIMARY KEY, -- not needed in state
+  id BIGSERIAL PRIMARY KEY, -- not needed in state, maybe this is needed
   creator_address VARCHAR(255) NOT NULL, -- 40-60 bytes (bech32)
   room_id BIGINT NOT NULL REFERENCES rooms(id), -- 8 bytes
   url VARCHAR(1024) UNIQUE NOT NULL, -- 32 bytes (sha256)

@@ -1,5 +1,5 @@
 import logger from '../util/logger';
-import pgInit from './pg-connect';
+import pgInit from './pgConnect';
 import { Server } from 'socket.io';
 import { Pool } from 'pg';
 
@@ -103,7 +103,7 @@ const addOrVisitUserInRoom = async (roomId: number, userAddress: string): Promis
         DO UPDATE SET last_visit = NOW()
         RETURNING *
     `;
-    
+
     const result = await pool.query(query, [String(roomId), userAddress]);
     logger.debug(`resources/addOrVisitUserInRoom: ${JSON.stringify(result.rows)}`);
     return convertObjectKeysToCamelCase(result.rows[0]);
@@ -111,8 +111,8 @@ const addOrVisitUserInRoom = async (roomId: number, userAddress: string): Promis
 
 // Creates a room
 const createRoom = async (
-    creatorAddress: string, 
-    name: string, 
+    creatorAddress: string,
+    name: string,
     description: string,
     type: string,
     password: string,

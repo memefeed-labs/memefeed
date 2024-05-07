@@ -8,8 +8,8 @@ import uuid from "uuid";
 import Room from "../models/Room";
 import UserRoom from "../models/UserRoom";
 
-import * as memePg from "../resources/memes-pg";
-import * as memeS3 from "../resources/memes-s3";
+import * as memePg from "../resources/memesPg";
+import * as memeS3 from "../resources/memesS3";
 import { isValidAddress } from "../util/web3";
 import identifyImage from "../util/images";
 
