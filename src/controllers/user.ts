@@ -6,11 +6,12 @@ import logger from "../util/logger";
 import User from "../models/User";
 
 import * as memePg from "../resources/pg";
-import { isValidAddress } from "../util/web3";
+import { isValidAddress, verifySignature } from "../util/web3";
 
 const createUserSchema = joi.object({
     address: joi.string().custom(isValidAddress).required(),
     username: joi.string().required(),
+    signature: joi.string().required(),
 });
 
 const getUserSchema = joi.object({
@@ -19,12 +20,20 @@ const getUserSchema = joi.object({
 
 // Creates a user
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
-    const { address, username } = req.body;
-    logger.debug(`createUser: ${JSON.stringify({ address, username })}`);
+    const { address, username, signature } = req.body;
+    logger.debug(`createUser: ${JSON.stringify({ address, username, signature })}`);
     const { error } = createUserSchema.validate(req.body);
     if (error) {
         logger.error(`createUser body validation error: ${error}`);
         return res.status(400).send(error.message);
+    }
+
+    // Verify the signature
+    const message = `Create account with username: ${username}`;
+    const isValidSignature = verifySignature(address, message, signature);
+    if (!isValidSignature) {
+        logger.error(`createUser: signature verification failed for address: ${address}`);
+        return res.status(401).send('Invalid signature');
     }
 
     try {
