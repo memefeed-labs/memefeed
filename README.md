@@ -23,6 +23,7 @@
    2. Internal Routes
    3. Rate Limiting?
    4. fly.io / neon.tech for instances / postgres
-2. Convert to more RESTful routes / grpc
-3. Response validation
-4. Tenor / Giphy for meme templates (50% / 50%)
+3. Change repo name to memefeed on Github
+4. Convert to more RESTful routes / grpc
+   1. Response validation
+   2. Convert responses to include error, status, result

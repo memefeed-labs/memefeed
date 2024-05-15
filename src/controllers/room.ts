@@ -8,13 +8,12 @@ import uuid from "uuid";
 import Room from "../models/Room";
 import UserRoom from "../models/UserRoom";
 
-import * as memePg from "../resources/memesPg";
-import * as memeS3 from "../resources/memesS3";
-import { isValidAddress } from "../util/web3";
+import * as memePg from "../resources/pg";
+import * as memeS3 from "../resources/s3";
 import identifyImage from "../util/images";
 
 const createRoomSchema = joi.object().keys({
-    creatorAddress: joi.string().custom(isValidAddress).required(),
+    creatorId: joi.number().integer().required(),
     name: joi.string().max(256).required(),
     description: joi.string().max(1024).required(),
     type: joi.string().valid('public', 'private').required(),
@@ -28,15 +27,15 @@ const getRoomSchema = joi.object().keys({
 
 const getAddUserToRoomSchema = joi.object().keys({
     roomId: joi.number().integer().required(),
-    userAddress: joi.string().custom(isValidAddress).required(),
+    userId: joi.number().integer().required(),
     password: joi.string().required(),
 });
 
 // Creates a room
 // Weak security assumptions for simplicity. Rooms needs more thought - could have member roles, etc.
 export const createRoom = async (req: Request, res: Response, next: NextFunction) => {
-    const { creatorAddress, name, description, type, password } = req.body;
-    logger.debug(`createRoom: ${JSON.stringify({ creatorAddress, name, description, type })}`); // do not log password
+    const { creatorId, name, description, type, password } = req.body;
+    logger.debug(`createRoom: ${JSON.stringify({ creatorId, name, description, type })}`); // do not log password
     const { error } = createRoomSchema.validate(req.body);
     if (error) {
         logger.error(`createRoom body validation error: ${error}`);
@@ -51,7 +50,6 @@ export const createRoom = async (req: Request, res: Response, next: NextFunction
     }
 
     // verify room image
-    // TODO: refactor image validation
     if (!req.file || !req.file.buffer) {
         logger.error(`createRoom: image is required`);
         return res.status(400).send("image is required");
@@ -64,8 +62,6 @@ export const createRoom = async (req: Request, res: Response, next: NextFunction
     }
 
     // identify image type
-    // TODO: is there a better way to know the image type?
-    // const roomImageType = req.file.mimetype;
     const roomImage = req.file.buffer;
     const roomImageType = identifyImage(roomImage);
     if (!roomImageType) {
@@ -89,7 +85,7 @@ export const createRoom = async (req: Request, res: Response, next: NextFunction
 
     // NOTE: if the room creation fails, the image will still be uploaded to blob storage
     try {
-        const room: Room = await memePg.createRoom(creatorAddress, name, description, type, password, logoUrl);
+        const room: Room = await memePg.createRoom(creatorId, name, description, type, password, logoUrl);
         logger.debug(`createRoom: ${JSON.stringify(room)}`);
         return res.status(200).send({ room });
     } catch (error) {
@@ -115,6 +111,13 @@ export const getRoom = async (req: Request, res: Response, next: NextFunction) =
     try {
         const room: Room = roomId ? await memePg.getRoomById(Number(roomId)) : await memePg.getRoomByName(String(name));
         logger.debug(`getRoom: ${JSON.stringify(room)}`);
+
+        // Return 404 if room not found
+        if (!room || Object.keys(room).length === 0) {
+            logger.error(`getRoom: room not found.`);
+            return res.status(404).send('Room not found.');
+        }
+
         return res.status(200).send({ room });
     } catch (error) {
         next(error);
@@ -123,8 +126,8 @@ export const getRoom = async (req: Request, res: Response, next: NextFunction) =
 
 // Add a user to a room or verifies the user if already added
 export const addOrVerifyUserInRoom = async (req: Request, res: Response, next: NextFunction) => {
-    const { roomId, userAddress, password } = req.body;
-    logger.debug(`addOrVerifyUserInRoom: ${JSON.stringify({ roomId, userAddress })}`); // do not log password
+    const { roomId, userId, password } = req.body;
+    logger.debug(`addOrVerifyUserInRoom: ${JSON.stringify({ roomId, userId })}`); // do not log password
     const { error } = getAddUserToRoomSchema.validate(req.body);
     if (error) {
         logger.error(`addOrVerifyUserInRoom body validation error: ${error}`);
@@ -150,9 +153,9 @@ export const addOrVerifyUserInRoom = async (req: Request, res: Response, next: N
 
     try {
         // Add user to room or update last visited to current time
-        const user: UserRoom = await memePg.addOrVisitUserInRoom(roomId, userAddress);
-        logger.debug(`addOrVerifyUserInRoom: ${JSON.stringify(user)}`);
-        return res.status(200).send({ user });
+        const userRoom: UserRoom = await memePg.addOrVisitUserInRoom(roomId, Number(userId));
+        logger.debug(`addOrVerifyUserInRoom: ${JSON.stringify(userRoom)}`);
+        return res.status(200).send({ userRoom });
     } catch (error) {
         next(error);
     }

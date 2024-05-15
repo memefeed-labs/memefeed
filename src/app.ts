@@ -11,6 +11,7 @@ import logger from "./util/logger";
 // Controllers (route handlers) - init handled in server.ts
 import * as memeController from "./controllers/meme";
 import * as roomController from "./controllers/room";
+import * as userController from "./controllers/user";
 
 // Middleware
 import hashPasswordMiddleware from "./middleware/password";
@@ -47,12 +48,40 @@ const errHandler = (err: Error, req: express.Request, res: express.Response, nex
 };
 
 /**
+ * Creates a user with a signed message.
+ * PUT /v1/user
+ *
+ * Body:
+ *  - address: Web3 address of the user
+ *  - username: Username of the user
+ *  - signature: Signed message from the user
+ *
+ * Returns:
+ *  An object containing the user: { user: User }
+ *  Note: All fields are camel case
+ */
+app.put("/v1/user", userController.createUser, errHandler);
+
+/**
+ * Retrieves a user by address.
+ * GET /v1/user?address=0x0
+ *
+ * Query Parameters:
+ *  - address: Web3 address of the user
+ *
+ * Returns:
+ *  An object containing the user: { user: User }
+ *  Note: All fields are camel case
+ */
+app.get("/v1/user", userController.getUser, errHandler);
+
+/**
  * Uploads a meme.
  * POST /v1/meme
  *
  * Form Data (Body):
  *   - memeImage: Meme image (gets converted to field buffer)
- *   - creatorAddress: Web3 address of the submitter
+ *   - creatorId: User ID of the creator
  *   - roomId: ID of the room
  *
  * Returns:
@@ -62,11 +91,11 @@ const errHandler = (err: Error, req: express.Request, res: express.Response, nex
 app.post("/v1/meme", upload.single("memeImage"), memeController.uploadMeme, errHandler);
 
 /**
- * Retrieves memes based on the provided user address.
- * GET /v1/memes?creatorAddress=0x0
+ * Retrieves memes based on the provided user.
+ * GET /v1/memes?creatorId=134
  *
  * Query Parameters:
- *   creatorAddress - User address in hexadecimal format
+ *   creatorId: User ID of the creator
  *
  * Returns:
  *   An array of memes: [{ Meme }]
@@ -83,7 +112,7 @@ app.get("/v1/memes", memeController.getMemes, errHandler);
  *   startDate - Start date of the time period in ISO 8601 format (e.g., "2022-01-30T02:37:48.762Z")
  *   endDate - End date of the time period in ISO 8601 format (e.g., "2022-03-14T12:00:00.000Z")
  *   roomId - ID of the room
- *   userAddress - Web3 address of the requesting user // TODO: move to header
+ *   userId - User ID
  *
  * Returns:
  *   An array of memes: { popularMemes: Meme[] }
@@ -99,7 +128,7 @@ app.get("/v1/memes/popular", memeController.getPopularMemes, errHandler);
  * Query Parameters:
  *  roomId - ID of the room
  *  limit - Number of memes to return (default: 100)
- *  userAddress - Web3 address of the requesting user // TODO: move to header
+ *  userId - User ID
  *
  * Returns:
  *  An array of memes with pollDelayMs (in ms since clocks vary): { recentMemes: Meme[], pollDelayMs: number }
@@ -113,7 +142,7 @@ app.get("/v1/memes/recent", memeController.getRecentMemes, errHandler);
  *
  * Body:
  *   - memeId: ID of the meme to like
- *   - likerAddress: Web3 address of the liker
+ *   - likerId: User ID of the liker
  *
  * Returns:
  *  An object containing the Like: { like: Like }
@@ -127,7 +156,7 @@ app.put("/v1/meme/like", memeController.likeMeme, errHandler);
  *
  * Body:
  *   - memeId: ID of the meme to like
- *   - likerAddress: Web3 address of the liker
+ *   - likerId: User ID of the liker
  *
  * Returns: 200 OK
  */
@@ -140,7 +169,7 @@ app.delete("/v1/meme/like", memeController.unlikeMeme, errHandler);
  *
  * Body:
  *  - roomId: ID of the room
- *  - userAddress: Address of the user
+ *  - userId: User ID
  *  - password: Password for public rooms
  *
  * Returns:
@@ -172,7 +201,7 @@ app.get("/v1/room", roomController.getRoom, errHandler);
  *
  * Form Data (Body):
  *   - roomImage: Room image (gets converted to field buffer)
- *   - creatorAddress - Address of the creating user
+ *   - creatorId - User ID of the creator
  *   - name - Name of the room (up to 256 characters)
  *   - description - Description of the room (up to 1024 characters)
  *   - type - Type of the room (public or private)

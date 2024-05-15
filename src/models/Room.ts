@@ -1,6 +1,6 @@
 export default interface Room {
     id: number;
-    creatorAddress: string;
+    creatorId: number;
     name: string;
     description: string;
     type: string;

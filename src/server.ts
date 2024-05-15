@@ -3,6 +3,10 @@ import app from './app';
 import logger from './util/logger';
 import { Server } from 'socket.io'
 
+import * as memeController from "./controllers/meme";
+import * as roomController from "./controllers/room";
+import * as userController from "./controllers/user";
+
 /**
  * Error Handler. Provides full stack
  */
@@ -35,9 +39,7 @@ io.on('connection', (socket) => {
   },);
 });
 
-import * as memeController from "./controllers/meme";
-import * as roomController from "./controllers/room";
-Promise.all([memeController.init(io), roomController.init(io)])
+Promise.all([memeController.init(io), roomController.init(io), userController.init(io)])
     .catch(err => logger.error('Error while initializing controller ', err));
 
 export default server;

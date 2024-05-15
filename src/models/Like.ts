@@ -1,7 +1,7 @@
 export default interface Like {
     id: number;
     memeId: number;
-    likerAddress: string;
+    likerId: number;
     createdAt: string;
     updatedAt: string;
 };
