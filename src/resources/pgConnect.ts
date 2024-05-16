@@ -38,7 +38,6 @@ const init = (io: Server): Pool => {
             logger.debug('Received notification', msg);
             if (msg.channel === 'new_meme') {
                 const payload = JSON.parse(msg.payload as string);
-                // TODO: could send as new_meme_roomId to optimize client side
                 io.emit('new_meme', convertObjectKeysToCamelCase(payload));
             }
         });

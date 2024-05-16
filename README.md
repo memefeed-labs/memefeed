@@ -18,3 +18,6 @@
    1. Response schema validation
    2. Convert responses to include error, status, result
    3. Eliminate redudant use of userID and roomID in request params, use req.auth (Session)
+5. Perf Optimizations
+   1. (GET memes endpoints) Implement pagination & offset to optimize performance.
+   2. (pgConnect.ts) socket.io - send as new_meme_roomId to optimize client side

@@ -139,7 +139,6 @@ app.get("/v1/memes/popular", validateSession, memeController.getPopularMemes, er
 
 /**
  * Get recent memes in a room for a live feed. Only use for initial load.
- * TODO: Implement pagination & offset to optimize performance.
  * GET /v1/memes/recent
  *
  * Query Parameters:
