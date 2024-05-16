@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { Server } from "socket.io";
 import logger from "../util/logger";
 import uuid from "uuid";
+import jwt from "jsonwebtoken";
 
 import Room from "../models/Room";
 import UserRoom from "../models/UserRoom";
@@ -11,6 +12,8 @@ import UserRoom from "../models/UserRoom";
 import * as memePg from "../resources/pg";
 import * as memeS3 from "../resources/s3";
 import identifyImage from "../util/images";
+import { SESSION_SECRET } from "../util/secrets";
+import { isValidAddress, verifySignature } from "../util/web3";
 
 const createRoomSchema = joi.object().keys({
     creatorId: joi.number().integer().required(),
@@ -25,11 +28,18 @@ const getRoomSchema = joi.object().keys({
     name: joi.string().allow(null),
 });
 
-const getAddUserToRoomSchema = joi.object().keys({
+const loginUserToRoomSchema = joi.object().keys({
     roomId: joi.number().integer().required(),
-    userId: joi.number().integer().required(),
     password: joi.string().required(),
+    address: joi.string().custom(isValidAddress).required(),
+    signature: joi.string().required(),
 });
+
+const helpers = {
+    generateSessionToken: (userId: number, roomId: number) => {
+        return jwt.sign({ userId, roomId }, SESSION_SECRET as string, { expiresIn: '30d' });
+    }
+}
 
 // Creates a room
 // Weak security assumptions for simplicity. Rooms needs more thought - could have member roles, etc.
@@ -125,37 +135,57 @@ export const getRoom = async (req: Request, res: Response, next: NextFunction) =
 };
 
 // Add a user to a room or verifies the user if already added
-export const addOrVerifyUserInRoom = async (req: Request, res: Response, next: NextFunction) => {
-    const { roomId, userId, password } = req.body;
-    logger.debug(`addOrVerifyUserInRoom: ${JSON.stringify({ roomId, userId })}`); // do not log password
-    const { error } = getAddUserToRoomSchema.validate(req.body);
+export const loginUserToRoom = async (req: Request, res: Response, next: NextFunction) => {
+    const { roomId, password, address, signature } = req.body;
+    logger.debug(`loginUserToRoom params: ${JSON.stringify({ roomId, address })}`); // do not log password
+    const { error } = loginUserToRoomSchema.validate(req.body);
     if (error) {
-        logger.error(`addOrVerifyUserInRoom body validation error: ${error}`);
+        logger.error(`loginUserToRoom body validation error: ${error}`);
         return res.status(400).send(error.message);
     }
+
+    // Verify the signature - message must match the signed message
+    const message = `Login to room with id: ${roomId} and address: ${address}`;
+    const isValidSignature = verifySignature(address, message, signature);
+    if (!isValidSignature) {
+        logger.error(`loginUserToRoom: signature verification failed for address: ${address}`);
+        return res.status(401).send('Invalid signature');
+    }
+
+    // Fetch user record from address
+    const user = await memePg.getUserByAddress(address);
+    if (!user || Object.keys(user).length === 0) {
+        logger.error(`loginUserToRoom: user not found for address: ${address}`);
+        return res.status(404).send('User not found.');
+    }
+    const userId = user.id;
 
     // Verify room is valid
     const room: Room = await memePg.getRoomById(roomId, true);
     if (!room || Object.keys(room).length === 0) {
-        logger.error(`addOrVerifyUserInRoom: room not found.`);
+        logger.error(`loginUserToRoom: room not found.`);
         return res.status(400).send('Room not found.');
     } else if (room.type !== 'public') {
-        logger.error(`addOrVerifyUserInRoom: non-public room found in db, not supported.`);
+        logger.error(`loginUserToRoom: non-public room found in db, not supported.`);
         return res.status(400).send('Only public rooms are supported.');
     }
 
     // Verify password
     const validPassword = await bcrypt.compare(password, String(room.password));
     if (!validPassword) {
-        logger.error(`addOrVerifyUserInRoom: invalid password.`);
+        logger.error(`loginUserToRoom: invalid password.`);
         return res.status(400).send('Invalid password.');
     }
 
     try {
+        const sessionToken = helpers.generateSessionToken(userId, roomId);
+
         // Add user to room or update last visited to current time
         const userRoom: UserRoom = await memePg.addOrVisitUserInRoom(roomId, Number(userId));
-        logger.debug(`addOrVerifyUserInRoom: ${JSON.stringify(userRoom)}`);
-        return res.status(200).send({ userRoom });
+        logger.debug(`loginUserToRoom result: ${JSON.stringify(userRoom)}`);
+
+        // Return user metadata and session token
+        return res.status(200).send({ userRoom, sessionToken });
     } catch (error) {
         next(error);
     }

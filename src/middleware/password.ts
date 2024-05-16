@@ -1,10 +1,10 @@
-import express from 'express';
+import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import joi from "joi";
 
 const passwordSchema = joi.string().min(8).required();
 
-const hashPasswordMiddleware = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const hashPasswordMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // If password is not present, allow application to handle
     if (!req.body.password) {

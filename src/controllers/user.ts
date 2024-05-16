@@ -28,7 +28,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         return res.status(400).send(error.message);
     }
 
-    // Verify the signature
+    // Verify the signature - message must match the signed message
     const message = `Create account with username: ${username}`;
     const isValidSignature = verifySignature(address, message, signature);
     if (!isValidSignature) {

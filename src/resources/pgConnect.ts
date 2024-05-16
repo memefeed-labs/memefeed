@@ -2,8 +2,7 @@ import { Pool } from 'pg';
 import { Server } from 'socket.io';
 import logger from '../util/logger';
 import { convertObjectKeysToCamelCase } from "../util/convertToCamelCase";
-import dotenv from 'dotenv';
-dotenv.config();
+import { PGUSER, PGHOST, PGDATABASE, PGPASSWORD, PGPORT } from '../util/secrets';
 
 // Singleton
 let singlePool: Pool;
@@ -14,11 +13,11 @@ const init = (io: Server): Pool => {
     }
 
     const pool = new Pool({
-        user: process.env.PGUSER || 'memefeed',
-        host: process.env.PGHOST || 'localhost',
-        database: process.env.PGDATABASE || 'memefeed-postgres',
-        password: process.env.PGPASSWORD || 'mysecretpassword',
-        port: Number(process.env.PGPORT) || 5432,
+        user: PGUSER || 'memefeed',
+        host: PGHOST || 'localhost',
+        database: PGDATABASE || 'memefeed-postgres',
+        password: PGPASSWORD || 'mysecretpassword',
+        port: Number(PGPORT) || 5432,
         idleTimeoutMillis: 30000,
         max: 20
     });

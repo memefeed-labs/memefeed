@@ -15,7 +15,7 @@ import * as userController from "./controllers/user";
 
 // Middleware
 import hashPasswordMiddleware from "./middleware/password";
-
+import validateSession from "./middleware/session";
 const upload = multer();
 
 // Create Express server
@@ -76,6 +76,23 @@ app.put("/v1/user", userController.createUser, errHandler);
 app.get("/v1/user", userController.getUser, errHandler);
 
 /**
+ * Authenticate a user to a room or verify the user if already added.
+ * ONLY handles public rooms at the moment.
+ * POST /v1/room/user
+ *
+ * Body:
+ *  - roomId: ID of the room
+ *  - password: Password for public rooms
+ *  - address: Web3 address of the user
+ *  - signature: Signed message from the user
+ *
+ * Returns:
+ *  An object containing the user metadata: { user: UserRoom, sessionToken: string (JWT) }
+ *  Note: All fields are camel case
+ */
+app.post("/v1/room/login", roomController.loginUserToRoom, errHandler);
+
+/**
  * Uploads a meme.
  * POST /v1/meme
  *
@@ -88,7 +105,7 @@ app.get("/v1/user", userController.getUser, errHandler);
  *   An object containing the meme: { meme: Meme }
  *   Note: All fields are camel case
  */
-app.post("/v1/meme", upload.single("memeImage"), memeController.uploadMeme, errHandler);
+app.post("/v1/meme", validateSession, upload.single("memeImage"), memeController.uploadMeme, errHandler);
 
 /**
  * Retrieves memes based on the provided user.
@@ -101,7 +118,7 @@ app.post("/v1/meme", upload.single("memeImage"), memeController.uploadMeme, errH
  *   An array of memes: [{ Meme }]
  *   Note: All fields are camel case
  */
-app.get("/v1/memes", memeController.getMemes, errHandler);
+app.get("/v1/memes", validateSession, memeController.getMemes, errHandler);
 
 /**
  * Retrieves top memes by popularity score within a specified time period, limited by count and in a room.
@@ -118,7 +135,7 @@ app.get("/v1/memes", memeController.getMemes, errHandler);
  *   An array of memes: { popularMemes: Meme[] }
  *   Note: All fields are camel case
  */
-app.get("/v1/memes/popular", memeController.getPopularMemes, errHandler);
+app.get("/v1/memes/popular", validateSession, memeController.getPopularMemes, errHandler);
 
 /**
  * Get recent memes in a room for a live feed. Only use for initial load.
@@ -134,7 +151,7 @@ app.get("/v1/memes/popular", memeController.getPopularMemes, errHandler);
  *  An array of memes with pollDelayMs (in ms since clocks vary): { recentMemes: Meme[], pollDelayMs: number }
  *  Note: All fields are camel case
  */
-app.get("/v1/memes/recent", memeController.getRecentMemes, errHandler);
+app.get("/v1/memes/recent", validateSession, memeController.getRecentMemes, errHandler);
 
 /**
  * Likes a meme.
@@ -148,7 +165,7 @@ app.get("/v1/memes/recent", memeController.getRecentMemes, errHandler);
  *  An object containing the Like: { like: Like }
  *  Note: All fields are camel case
  */
-app.put("/v1/meme/like", memeController.likeMeme, errHandler);
+app.put("/v1/meme/like", validateSession, memeController.likeMeme, errHandler);
 
 /**
  * Unlikes a meme.
@@ -160,23 +177,7 @@ app.put("/v1/meme/like", memeController.likeMeme, errHandler);
  *
  * Returns: 200 OK
  */
-app.delete("/v1/meme/like", memeController.unlikeMeme, errHandler);
-
-/**
- * Add a user to a room or verifies the user if already added.
- * ONLY handles public rooms at the moment.
- * POST /v1/room/user
- *
- * Body:
- *  - roomId: ID of the room
- *  - userId: User ID
- *  - password: Password for public rooms
- *
- * Returns:
- *  An object containing the user metadata: { user: UserRoom }
- *  Note: All fields are camel case
- */
-app.post("/v1/room/user", roomController.addOrVerifyUserInRoom, errHandler);
+app.delete("/v1/meme/like", validateSession, memeController.unlikeMeme, errHandler);
 
 /**
  * Retrieves a room by ID or name.
