@@ -15,6 +15,8 @@ For now, here's the basic gist:
 7. A token would make sense for Memefeed to enable DA-neutrality. Maybe to post to multiple DAs.
 8. (Future) Room metadata privacy. What happens in a room, should stay in a room.
 
+Probably ending the hackathon with a lot more questions than I started with :)
+
 ## Design Details
 
 1. [Data Models (Postgres)](https://github.com/memefeed-labs/memefeed/blob/main/src/resources/memes-pg.ts)
