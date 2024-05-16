@@ -1,5 +1,7 @@
 # Memefeed
 
+## (5/16) DISCLAIMER: CELESTIA HACKATHON PEOPLE: PLEASE COME BACK IN 24-48 HRS FOR UPDATED TECHNICAL DOCUMENTATION.
+
 ## Design Details
 
 1. [Data Models (Postgres)](https://github.com/memefeed-labs/memefeed/blob/main/src/resources/memes-pg.ts)
