@@ -1,11 +1,25 @@
 # Memefeed
 
+Live Memes for Every Community.
+
 ## (5/16) DISCLAIMER: CELESTIA HACKATHON PEOPLE: PLEASE COME BACK IN 24-48 HRS FOR UPDATED TECHNICAL DOCUMENTATION
+
+For now, here's the basic gist:
+
+1. Memefeed posts data to Celestia directly using a single sequencer (this node).
+2. The [format](https://github.com/memefeed-labs/memefeed/blob/main/src/resources/celestia.ts#L45-L50) of the data is a series of blobs that allows another full node to reconstruct the state.
+3. (Not Currently Implemented) The sequencer records a tx as pending initially, and a da-worker would basically be reading in confirmed blobs and updating the tx_status to final (or defaulting to whatever the DA has).
+4. (Not Currently Implemented) To sync a new node for verification, a sync worker would read in all blobs and reconstruct the Postgres table.
+5. (Not Currently Implemented) Image verification. Currently, image data is stored on S3. How to verify?
+6. Right now, the sequencer would just pay for the txs as long as the user is authenticated (via a tx signature & JWT token). In the future, packs/subscriptions could be used. Though, nothing is final.
+7. A token would make sense for Memefeed to enable DA-neutrality. Maybe to post to multiple DAs.
+8. (Future) Room metadata privacy. What happens in a room, should stay in a room.
 
 ## Design Details
 
 1. [Data Models (Postgres)](https://github.com/memefeed-labs/memefeed/blob/main/src/resources/memes-pg.ts)
 2. [API Endpoints](https://github.com/memefeed-labs/memefeed/blob/main/src/app.ts)
+3. [Celestia](https://github.com/memefeed-labs/memefeed/blob/main/src/resources/pg.ts#L38)
 
 ## Open
 
