@@ -1,5 +1,8 @@
 FROM node:18-alpine
 
+# TODO: remove git; write a new typescript client for celestia
+RUN apk add --no-cache git
+
 RUN mkdir -p /usr/app
 WORKDIR /usr/app
 

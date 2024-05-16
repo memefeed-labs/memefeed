@@ -4,7 +4,7 @@
   "description": "Memefeed",
   "repository": {
     "type": "git",
-    "url": "https://github.com/memefeed-labs/memefeed-web2"
+    "url": "https://github.com/memefeed-labs/memefeed"
   },
   "scripts": {
     "build-ts": "tsc",
@@ -28,6 +28,7 @@
     "bcrypt": "^5.1.1",
     "bluebird": "3.7.2",
     "body-parser": "^1.20.2",
+    "cntsc": "https://github.com/memefeed-labs/celestia-client-ts.git",
     "compression": "1.7.4",
     "cors": "^2.8.5",
     "dotenv": "8.2.0",

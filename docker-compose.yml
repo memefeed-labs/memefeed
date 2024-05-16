@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     container_name: postgres
-    image: postgres:latest # TODO: pin to specific version?
+    image: postgres:14
     restart: always
     environment:
       POSTGRES_USER: memefeed
@@ -22,6 +22,27 @@ services:
     networks:
       - memefeed-network
 
+  celestia:
+    container_name: celestia
+    image: ghcr.io/celestiaorg/celestia-node:v0.13.5
+    restart: on-failure
+    environment:
+      - NODE_TYPE=light
+      - P2P_NETWORK=mocha
+    ports:
+      - "26657:26657"
+      - "26658:26658"
+      - "26659:26659"
+      - "9090:9090"
+    command: ["celestia", "light", "start", "--core.ip", "rpc-mocha.pops.one", "--p2p.network", "mocha", "--rpc.skip-auth"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -X POST http://localhost:26657 -H 'Content-Type: application/json' -d '{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"node.Ready\",\"params\":[]}' | grep '\"result\":\\[true\\]' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - memefeed-network
+
   memefeed:
     container_name: memefeed
     build:
@@ -30,6 +51,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      # celestia:
+        # condition: service_healthy
     environment:
       NODE_ENV: development
       PGUSER: memefeed
@@ -39,6 +62,7 @@ services:
       PGPORT: 5432
     links:
       - postgres
+      # - celestia
     ports:
       - '3100:3100'
     networks:

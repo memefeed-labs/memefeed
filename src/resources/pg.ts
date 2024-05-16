@@ -2,6 +2,7 @@ import logger from '../util/logger';
 import pgInit from './pgConnect';
 import { Server } from 'socket.io';
 import { Pool } from 'pg';
+import * as celestiaClient from './celestia';
 
 import Meme from "../models/Meme";
 import Like from "../models/Like";
@@ -23,12 +24,28 @@ const helpers = {
     }
 }
 
+const PENDING_TX_STATUS = 'pending';
+
 // Create a user
 const createUser = async (address: string, username: string): Promise<User> => {
-    const query = 'INSERT INTO users (address, username) VALUES ($1, $2) RETURNING *';
-    const result = await pool.query(query, [address, username]);
+    const query = 'INSERT INTO users (address, username, tx_status) VALUES ($1, $2, $3) RETURNING *';
+    const result = await pool.query(query, [address, username, PENDING_TX_STATUS]);
     logger.debug(`resources/createUser: ${JSON.stringify(result.rows)}`);
-    return convertObjectKeysToCamelCase(result.rows[0]);
+    const user: User = convertObjectKeysToCamelCase(result.rows[0]);
+
+    // Post user to Celestia
+    try {
+        const txHash = await celestiaClient.postUserToCelestia(user);
+
+        // Update user with tx hash
+        const updateQuery = 'UPDATE users SET tx_hash = $1 WHERE id = $2';
+        await pool.query(updateQuery, [txHash, user.id]);
+        logger.debug(`resources/createUser: User ${user.id} updated with Celestia tx hash ${txHash}`);
+    } catch (error) {
+        logger.error(`resources/createUser: Error posting user to Celestia: ${error}`);
+    }
+
+    return user
 };
 
 // Get a single user by address
@@ -49,10 +66,25 @@ const getUserById = async (userId: number): Promise<User> => {
 
 // Create a meme
 const createMeme = async (creatorId: number, roomId: number, url: string): Promise<Meme> => {
-    const query = 'INSERT INTO memes (creator_id, room_id, url) VALUES ($1, $2, $3) RETURNING *';
-    const result = await pool.query(query, [String(creatorId), String(roomId), url]);
+    const query = 'INSERT INTO memes (creator_id, room_id, url, tx_status) VALUES ($1, $2, $3, $4) RETURNING *';
+    const result = await pool.query(query, [String(creatorId), String(roomId), url, PENDING_TX_STATUS]);
     logger.debug(`resources/createMeme: ${JSON.stringify(result.rows)}`);
-    return convertObjectKeysToCamelCase(result.rows[0]);
+
+    const meme = convertObjectKeysToCamelCase(result.rows[0]);
+
+    // Post meme to Celestia
+    try {
+        const txHash = await celestiaClient.postMemeToCelestia(meme);
+
+        // Update meme with tx hash
+        const updateQuery = 'UPDATE memes SET tx_hash = $1 WHERE id = $2';
+        await pool.query(updateQuery, [txHash, meme.id]);
+        logger.debug(`resources/createMeme: Meme ${meme.id} updated with Celestia tx hash ${txHash}`);
+    } catch (error) {
+        logger.error(`resources/createMeme: Error posting meme to Celestia: ${error}`);
+    }
+
+    return meme;
 };
 
 // Get a single meme
@@ -103,14 +135,29 @@ const getMemeLikes = async (memeId: number): Promise<Like[]> => {
 // Add a like to meme
 const likeMeme = async (memeId: number, likerId: number): Promise<Like> => {
     const query = `
-        INSERT INTO meme_likes (meme_id, liker_id) VALUES ($1, $2)
+        INSERT INTO meme_likes (meme_id, liker_id, tx_status) VALUES ($1, $2, $3)
         ON CONFLICT DO NOTHING 
         RETURNING *
     `;
 
-    const result = await pool.query(query, [String(memeId), String(likerId)]);
+    const result = await pool.query(query, [String(memeId), String(likerId), PENDING_TX_STATUS]);
     logger.debug(`resources/likeMeme: ${JSON.stringify(result.rows)}`);
-    return convertObjectKeysToCamelCase(result.rows[0]);
+
+    const like = convertObjectKeysToCamelCase(result.rows[0]);
+
+    // Post like to Celestia
+    try {
+        const txHash = await celestiaClient.postLikeToCelestia(like);
+
+        // Update like with tx hash
+        const updateQuery = 'UPDATE meme_likes SET tx_hash = $1 WHERE id = $2';
+        await pool.query(updateQuery, [txHash, like.id]);
+        logger.debug(`resources/likeMeme: Like ${like.id} updated with Celestia tx hash ${txHash}`);
+    } catch (error) {
+        logger.error(`resources/likeMeme: Error posting like to Celestia: ${error}`);
+    }
+
+    return like;
 };
 
 // Unlike a meme
@@ -118,6 +165,14 @@ const unlikeMeme = async (memeId: number, likerId: number): Promise<void> => {
     const query = 'DELETE FROM meme_likes WHERE meme_id = $1 AND liker_id = $2';
     await pool.query(query, [String(memeId), String(likerId)]);
     logger.debug(`resources/unlikeMeme: Meme ${memeId} unliked by ${likerId}`);
+
+    // Post unlike to Celestia
+    try {
+        const txHash = await celestiaClient.postUnlikeToCelestia(likerId, memeId);
+        logger.debug(`resources/unlikeMeme: Unlike posted to Celestia with tx hash ${txHash}`);
+    } catch (error) {
+        logger.error(`resources/unlikeMeme: Error posting unlike to Celestia: ${error}`);
+    }
 };
 
 // Add user to room or update last visit
@@ -148,15 +203,30 @@ const createRoom = async (
     }
 
     const query = `
-        INSERT INTO rooms (creator_id, name, description, type, password, logo_url)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO rooms (creator_id, name, description, type, password, logo_url, tx_status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
     `;
 
-    const result = await pool.query(query, [String(userId), name, description, type, password, logoUrl]);
+    const result = await pool.query(query, [String(userId), name, description, type, password, logoUrl, PENDING_TX_STATUS]);
     const sanatizedRoom = helpers.sanatizeRoomObject(result.rows[0]);
     logger.debug(`resources/createRoom: ${JSON.stringify(sanatizedRoom)}`);
-    return convertObjectKeysToCamelCase(sanatizedRoom);
+
+    const room = convertObjectKeysToCamelCase(sanatizedRoom);
+
+    // Post room to Celestia
+    try {
+        const txHash = await celestiaClient.postRoomToCelestia(room);
+
+        // Update room with tx hash
+        const updateQuery = 'UPDATE rooms SET tx_hash = $1 WHERE id = $2';
+        await pool.query(updateQuery, [txHash, room.id]);
+        logger.debug(`resources/createRoom: Room ${room.id} updated with Celestia tx hash ${txHash}`);
+    } catch (error) {
+        logger.error(`resources/createRoom: Error posting room to Celestia: ${error}`);
+    }
+
+    return room;
 };
 
 // Get a room by ID

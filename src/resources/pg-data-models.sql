@@ -1,19 +1,23 @@
 CREATE TABLE IF NOT EXISTS users (
   id BIGSERIAL PRIMARY KEY, -- 8 bytes
-  address VARCHAR(255) NOT NULL UNIQUE, 
-  username VARCHAR(255) UNIQUE NOT NULL,
+  address VARCHAR(255) NOT NULL UNIQUE, -- 40-60 bytes
+  username VARCHAR(255) UNIQUE NOT NULL, -- ~20 bytes
+  tx_status VARCHAR(255) NOT NULL, -- pending, final, fail
+  tx_hash VARCHAR(255),
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS rooms (
   id BIGSERIAL PRIMARY KEY, -- 8 bytes
-  creator_id BIGINT NOT NULL REFERENCES users(id), -- address is 40-60 bytes (bech32)
+  creator_id BIGINT NOT NULL REFERENCES users(id), -- address is 40-60 bytes
   name VARCHAR(255) UNIQUE NOT NULL, -- 20 bytes
   description VARCHAR(1024) NOT NULL, -- 255 bytes
   type VARCHAR(255) NOT NULL, -- public or private -- 1 byte
   password VARCHAR(255), -- only for public rooms -- 32 bytes (sha256)
   logo_url VARCHAR(1024) UNIQUE NOT NULL, -- 32 bytes (sha256)
+  tx_status VARCHAR(255) NOT NULL, -- pending, final, fail
+  tx_hash VARCHAR(255),
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -23,24 +27,28 @@ CREATE TABLE IF NOT EXISTS user_rooms (
   id BIGSERIAL PRIMARY KEY, -- 8 bytes
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   last_visit TIMESTAMP NOT NULL DEFAULT NOW(), -- 20 bytes (timestamp)
-  user_id BIGINT NOT NULL REFERENCES users(id), -- 40-60 bytes (bech32)
+  user_id BIGINT NOT NULL REFERENCES users(id), -- 40-60 bytes
   room_id BIGINT NOT NULL REFERENCES rooms(id) -- 8 bytes
 );
 
 CREATE TABLE IF NOT EXISTS memes (
   id BIGSERIAL PRIMARY KEY, -- 8 bytes
-  creator_id BIGINT NOT NULL REFERENCES users(id), -- address is 40-60 bytes (bech32)
+  creator_id BIGINT NOT NULL REFERENCES users(id), -- address is 40-60 bytes
   room_id BIGINT NOT NULL REFERENCES rooms(id), -- 8 bytes
   url VARCHAR(1024) UNIQUE NOT NULL, -- 32 bytes (sha256)
   likes_count INTEGER NOT NULL DEFAULT 0, -- can be derived from likes table
+  tx_status VARCHAR(255) NOT NULL, -- pending, final, fail
+  tx_hash VARCHAR(255),
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS meme_likes (
   id BIGSERIAL PRIMARY KEY, -- 8 bytes
-  liker_id BIGINT NOT NULL REFERENCES users(id), -- address is 40-60 bytes (bech32)
+  liker_id BIGINT NOT NULL REFERENCES users(id), -- address is 40-60 bytes
   meme_id BIGINT NOT NULL REFERENCES memes(id), -- 8 bytes
+  tx_status VARCHAR(255) NOT NULL, -- pending, final, fail
+  tx_hash VARCHAR(255),
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
