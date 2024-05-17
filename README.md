@@ -8,7 +8,7 @@ For now, here's the basic gist:
 
 1. Memefeed posts data to Celestia directly using a single sequencer (this node).
 2. The [format](https://github.com/memefeed-labs/memefeed/blob/main/src/resources/celestia.ts#L45-L50) of the data is a series of blobs that allows another full node to reconstruct the state.
-3. (Not Currently Implemented) The sequencer records a tx as pending initially, and a da-worker would basically be reading in confirmed blobs and updating the tx_status to final (or defaulting to whatever the DA has).
+3. (Partially Implemented) The sequencer records a tx as pending initially, and a da-worker would basically be reading in confirmed blobs and updating the tx_status to final (or defaulting to whatever the DA has).
 4. (Not Currently Implemented) To sync a new node for verification, a sync worker would read in all blobs and reconstruct the Postgres table.
 5. (Not Currently Implemented) Image verification. Currently, image data is stored on S3. How to verify?
 6. Right now, the sequencer would just pay for the txs as long as the user is authenticated (via a tx signature & JWT token). In the future, packs/subscriptions could be used. Though, nothing is final.
