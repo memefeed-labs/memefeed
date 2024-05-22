@@ -28,7 +28,7 @@ I hope to have more robust documenation later on. For now, here's the basic gist
 6. **Transaction Payment**
    - Currently, the sequencer pays for transactions as long as the user is authenticated (via a transaction signature & JWT token).
    - Future plans include using packs a la carte or subscriptions for payments.
-   - Contributors would be rewarded (TBD - tipping, memecoins, etc).
+   - Reward contributors (later)
 
 7. **Token**
    - A token could enable DA-diversity, allowing posts to multiple DAs.
