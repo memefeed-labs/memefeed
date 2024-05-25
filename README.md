@@ -4,6 +4,7 @@ Memefeed is a sovereign app chain that enables live memes for every community.
 
 [Dorahacks Buidl](<https://dorahacks.io/buidl/12713>)
 [Demo Video](<https://www.youtube.com/watch?v=xcMi5EfuPAo>)
+[Follow on Twitter](<https://www.x.com/memefeedorg>)
 
 ![Architecture Diagram](tech_diagram.png)
 
